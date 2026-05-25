@@ -248,7 +248,13 @@ def backup_to_github(token, endpoints, stacks):
     # Commit and push to GitHub
     repo.git.add(A=True)
     if repo.is_dirty(staged=True):
-        commit_message = "Update: " + ", ".join(sorted(updated_stacks))
+        changed_files = repo.git.diff('--cached', '--name-only').splitlines()
+        # Extract stack names from paths like "local/stackname/docker-compose.yml"
+        changed_stacks = sorted(set(
+            parts[1] for f in changed_files
+            if len(parts := f.split('/')) > 1 and parts[1] != ''
+        ))
+        commit_message = "Update: " + ", ".join(changed_stacks) if changed_stacks else "Update"
         repo.index.commit(commit_message)
         origin = repo.remote(name='origin')
         origin.push()
