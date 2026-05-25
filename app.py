@@ -246,13 +246,15 @@ def backup_to_github(token, endpoints, stacks):
     logger.info("Updated: README.md")
 
     # Commit and push to GitHub
-    if updated_stacks:
-        repo.git.add(A=True)
-        commit_message = "Update: " + ", ".join(sorted(updated_stacks))  # Sort for consistent order
+    repo.git.add(A=True)
+    if repo.is_dirty(staged=True):
+        commit_message = "Update: " + ", ".join(sorted(updated_stacks))
         repo.index.commit(commit_message)
         origin = repo.remote(name='origin')
         origin.push()
         logger.info(f"Commit and push completed: {commit_message}")
+    else:
+        logger.info("No changes detected, skipping commit and push.")
 
 def scheduled_backup():
     """
