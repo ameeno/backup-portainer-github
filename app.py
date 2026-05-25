@@ -240,16 +240,22 @@ def backup_to_github(token, endpoints, stacks):
                     updated_stacks.add(stack_name)
                     logger.info(f"Updated: {stack_name}/stack.env")
 
-    # Update README.md
-    update_readme(repo, endpoints, stacks)
-    updated_stacks.add("README.md")
-    logger.info("Updated: README.md")
+    # Update README.md (optional, disabled by default)
+    if os.getenv('ENABLE_README_UPDATE', 'false').lower() == 'true':
+        update_readme(repo, endpoints, stacks)
+        updated_stacks.add("README.md")
+        logger.info("Updated: README.md")
+    else:
+        logger.info("README update disabled, skipping.")
 
     # Commit and push to GitHub
     repo.git.add(A=True)
     if repo.is_dirty(staged=True):
+        # Stacks changed, so update README too
+        update_readme(repo, endpoints, stacks)
+        repo.git.add(A=True)  # stage the README update
+
         changed_files = repo.git.diff('--cached', '--name-only').splitlines()
-        # Extract stack names from paths like "local/stackname/docker-compose.yml"
         changed_stacks = sorted(set(
             parts[1] for f in changed_files
             if len(parts := f.split('/')) > 1 and parts[1] != ''
